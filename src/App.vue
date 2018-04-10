@@ -39,7 +39,7 @@ body {
 <script>
 export default {
   mounted () {
-    this.$router.push('/main_lpoint')
+    this.$router.push('/index')
   }
 }
 </script>
