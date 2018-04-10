@@ -3,7 +3,7 @@
     <el-tab-pane label="文件上传" class="upload-page">
       <el-row :gutter="40">
         <el-col :span="12">
-          <el-upload :limit="1" class="upload-demo" :action="url" :http-request="uploadFunc" :on-remove="handleRemove" :before-remove="beforeRemove">
+          <el-upload :limit="1" class="upload-demo" :action="url" :http-request="uploadFunc" :on-remove="handleRemove" :before-remove="beforeRemove" :on-preview="handleCopy">
             <el-button type="primary" v-loading.fullscreen.lock="loading">点击上传</el-button>
           </el-upload>
         </el-col>
@@ -41,6 +41,7 @@
 <script>
 // @ is an alias to /src
 import { stringify } from 'qs'
+import clipboardy from 'clipboardy'
 
 export default {
   name: 'home',
@@ -181,6 +182,9 @@ export default {
       document.body.appendChild(form)
       form.submit()
       document.body.removeChild(form)
+    },
+    handleCopy () {
+      clipboardy.writeSync(this.name)
     }
   }
 }
