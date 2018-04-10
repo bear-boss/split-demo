@@ -1,9 +1,9 @@
 <template>
-  <el-tabs type="border-card" style="max-width: 1300px;margin: 0 10%;height:calc(100% - 10px)">
+  <el-tabs type="border-card" class="container">
     <el-tab-pane label="文件上传" class="upload-page">
       <el-row :gutter="40">
         <el-col :span="12">
-          <el-upload :limit="1" class="upload-demo" :action="url" :http-request="uploadFunc" :on-remove="handleRemove" :before-remove="beforeRemove" :on-preview="handleCopy">
+          <el-upload :limit="1" class="upload-demo" :action="url" :http-request="uploadFunc" :on-remove="handleRemove" :before-remove="beforeRemove" :on-preview="handleCopy" :on-exceed="handleExceed">
             <el-button type="primary" v-loading.fullscreen.lock="loading">点击上传</el-button>
           </el-upload>
         </el-col>
@@ -21,8 +21,8 @@
     </el-tab-pane>
     <el-tab-pane label="文件下载">
       <el-row type="flex" justify="center">
-        <el-col :span="12" style="display:flex">
-          <el-input placeholder="请输入文件名称" prefix-icon="el-icon-search" v-model="inputName">
+        <el-col style="display:flex;justify-content:center">
+          <el-input placeholder="请输入文件名称" style="width:40%" prefix-icon="el-icon-search" v-model="inputName" @keyup.enter.native="handleSearch">
           </el-input>
           <el-button style="margin-left:20px" icon="el-icon-search" type="primary" @click="handleSearch" :loading="searchLoading">{{ searchText }}</el-button>
           <el-button style="margin-left:20px" icon="el-icon-download" type="primary" v-show="showDownload" @click="handleDownload">下载</el-button>
@@ -38,10 +38,27 @@
   </el-tabs>
 </template>
 
+<style>
+body {
+  padding: 100px 10%;
+  height: calc(100vh - 200px);
+  background-image: url("./bg.png");
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+}
+.container {
+  max-width: 1300px;
+  margin: 0 auto;
+  height: 80%;
+  text-align: center;
+  padding-bottom: 100px;
+}
+</style>
+
 <script>
 // @ is an alias to /src
 import { stringify } from 'qs'
-import clipboardy from 'clipboardy'
+import copy from 'clipboard-copy'
 
 export default {
   name: 'home',
@@ -52,7 +69,6 @@ export default {
       searchLoading: false,
       address: '',
       inputName: '',
-      fileList: [],
       file: '',
       url: process.env.VUE_APP_SERVER_URL,
       tableData: [],
@@ -74,7 +90,7 @@ export default {
     }
   },
   methods: {
-    uploadFunc (item) {
+    uploadFunc (item, ag1, ag2) {
       let formdata = new FormData()
       formdata.append('file', item.file)
       formdata.append('action', 'test')
@@ -92,7 +108,7 @@ export default {
         }
       }).catch(err => {
         this.loading = false
-        this.$message.error('上传失败！')
+        this.$message.error('上传失败')
         console.log(err)
       })
     },
@@ -102,7 +118,6 @@ export default {
       this.$http({
         method: 'post',
         url: '/upload/uploadToChain',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         data: stringify({
           filename: this.file,
           fragmentHashList: JSON.stringify(this.tableData)
@@ -110,7 +125,6 @@ export default {
       }
       ).then(res => {
         this.smallLoading = false
-        console.log(res)
         if (res.data && res.data.result) {
           this.address = res.data.address
         }
@@ -123,27 +137,26 @@ export default {
     handleRemove (file, fileList) {
       this.file = ''
       this.tableData = []
+      this.address = ''
     },
     beforeRemove (file, fileList) {
       return this.$confirm(`确定移除 ${file.name}？`)
     },
     handleSearch () {
       if (this.inputName === '') {
-        this.$message.error('请输入文件名！')
+        this.$message.error('请输入文件名')
         return false
       }
       this.searchLoading = true
       this.$http({
         method: 'post',
         url: '/download/checkfile',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         data: stringify({
           filename: this.inputName
         })
       }
       ).then(res => {
         this.searchLoading = false
-        console.log(res)
         if (res.data.result && res.data.fragmentHashList) {
           this.downloadTableData = res.data.fragmentHashList
         } else {
@@ -184,7 +197,13 @@ export default {
       document.body.removeChild(form)
     },
     handleCopy () {
-      clipboardy.writeSync(this.name)
+      let success = copy(this.file)
+      if (success) {
+        this.$message.success('文件名已复制')
+      }
+    },
+    handleExceed () {
+      this.$message.error('请先移除旧文件')
     }
   }
 }
